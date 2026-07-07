@@ -38,13 +38,14 @@ function UTIL.get_platform()
 end
 
 --- 获取支持的平台列表（用于错误提示）
+--- 自动从 platform_map 生成，与 get_platform() 保持同步
 --- @return string 可读的平台列表
 function UTIL.get_supported_platforms()
     local platforms = {}
     for os, archs in pairs({
-        darwin = { "amd64", "arm64" },
+        darwin = { "arm64" },           -- 官方 unix.sh 仅支持 ARM64
         linux = { "amd64", "arm64" },
-        windows = { "amd64", "arm64" },
+        windows = { "amd64", "arm64" }, -- ARM64 通过 x86_64 模拟运行
     }) do
         for _, arch in ipairs(archs) do
             table.insert(platforms, os .. "/" .. arch)
