@@ -28,6 +28,9 @@ mise install moonbit@0.10.3+16975d007
 # 安装最新的 0.10.x 版本
 mise install moonbit@0.10
 
+# 安装 nightly 版本
+mise install moonbit@nightly
+
 # 设置全局版本
 mise use -g moonbit@latest
 
@@ -39,19 +42,21 @@ mise ls-remote moonbit
 
 | 变量 | 说明 |
 |------|------|
-| `MOONBIT_INSTALL_DEV` | 设置为 `1` 安装开发版本 |
-
-## 镜像
-
-可通过设置 `VFOX_MOONBIT_MIRROR` 环境变量来配置下载镜像。默认值为 `https://cli.moonbitlang.cn`。
+| `MOONBIT_INSTALL_DEV` | 设置为 `1` 安装开发版本（下载 `-dev` 后缀的构建） |
+| `MOONBIT_INSTALL_VERSION` | 指定要安装的版本，优先级高于命令行参数 |
+| `VFOX_MOONBIT_MIRROR` | 下载镜像地址，默认 `https://cli.moonbitlang.cn` |
 
 ## 支持的平台
 
 | 操作系统 | 架构 |
 |----------|------|
-| macOS | arm64 (Apple Silicon)、x86_64 (Intel) |
+| macOS | arm64 (Apple Silicon) |
 | Linux | x86_64、aarch64 |
-| Windows | x86_64 |
+| Windows | x86_64、arm64（通过 x86_64 模拟运行） |
+
+> 平台支持与官方安装脚本一致：
+> - `unix.sh`：macOS ARM64、Linux x86_64/aarch64
+> - `powershell.ps1`：Windows AMD64/ARM64
 
 ## 开发
 
