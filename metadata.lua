@@ -1,29 +1,38 @@
 -- metadata.lua
--- Plugin metadata and configuration
--- Documentation: https://mise.jdx.dev/tool-plugin-development.html#metadata-lua
+-- MoonBit 插件元数据和配置
+-- 参考: https://vfox.dev/plugins/create/howto.html
 
 PLUGIN = { -- luacheck: ignore
-    -- Required: Tool name (lowercase, no spaces)
-    name = "<TOOL>",
+    -- 插件名称（小写，无空格）
+    name = "moonbit",
 
-    -- Required: Plugin version (not the tool version)
+    -- 插件版本
     version = "1.0.0",
 
-    -- Required: Brief description of the tool
-    description = "A mise tool plugin for <TOOL>",
+    -- 插件描述
+    description = "MoonBit 编程语言工具链。MoonBit 是一个用于云和边缘计算的端到端编程语言工具链，使用 WebAssembly。",
 
-    -- Required: Plugin author/maintainer
-    author = "<GITHUB_USER>",
+    -- 插件作者/维护者
+    author = "mise-plugins",
 
-    -- Optional: Repository URL for plugin updates
-    updateUrl = "https://github.com/<GITHUB_USER>/mise-<TOOL>",
+    -- 插件仓库地址
+    homepage = "https://github.com/mise-plugins/mise-moonbit",
 
-    -- Optional: Minimum mise runtime version required
+    -- 最低 mise 运行时版本
     minRuntimeVersion = "0.2.0",
 
-    -- Optional: Legacy version files this plugin can parse
+    -- 可选：许可证
+    license = "MIT",
+
+    -- 可选：注意事项
+    notes = {
+        "安装完成后会自动下载并编译 MoonBit 核心库。",
+        "可通过环境变量 MOONBIT_INSTALL_DEV=1 安装开发版本。",
+    },
+
+    -- 旧版版本文件支持（如 .moon-version、.moonbitrc）
     -- legacyFilenames = {
-    --     ".<TOOL>-version",
-    --     ".<TOOL>rc"
+    --     ".moon-version",
+    --     ".moonbitrc",
     -- }
 }

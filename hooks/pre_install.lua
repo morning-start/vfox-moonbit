@@ -1,78 +1,68 @@
---- Returns download information for a specific version
---- Documentation: https://mise.jdx.dev/tool-plugin-development.html#preinstall-hook
---- @param ctx {version: string, runtimeVersion: string} Context
---- @return table Version and download information
+--- 返回指定版本的预安装信息（下载地址、校验和等）
+--- 参考: https://vfox.dev/plugins/create/howto.html#preinstall
+--- @param ctx table 上下文
+--- @field ctx.version string 用户请求的版本
+--- @return table 版本信息和下载地址
 function PLUGIN:PreInstall(ctx)
+    local http = require("http")
+    local util = require("util")
+
     local version = ctx.version
-    -- ctx.runtimeVersion contains the full version string if needed
 
-    -- Example 1: Simple binary download
-    -- local url = "https://github.com/<GITHUB_USER>/<GITHUB_REPO>/releases/download/v" .. version .. "/<TOOL>-linux-amd64"
+    -- 检测平台支持
+    local platform = util.get_platform()
+    if platform == nil then
+        error("不支持当前平台: " .. RUNTIME.osType .. " " .. RUNTIME.archType
+            .. "。支持的平台: " .. util.get_supported_platforms())
+    end
 
-    -- Example 2: Platform-specific binary
-    -- local platform = get_platform() -- Uncomment the helper function below
-    -- local url = "https://github.com/<GITHUB_USER>/<GITHUB_REPO>/releases/download/v" .. version .. "/<TOOL>-" .. platform
+    -- 处理 "latest" 和部分版本匹配（合并为一次 API 调用）
+    -- nightly 版本直接使用，无需解析
+    local needs_resolve = (version ~= "nightly" and (version == "latest" or not version:find("%+")))
+    local available = nil
 
-    -- Example 3: Archive (tar.gz, zip) - mise will extract automatically
-    -- local url = "https://github.com/<GITHUB_USER>/<GITHUB_REPO>/releases/download/v" .. version .. "/<TOOL>-" .. version .. "-linux-amd64.tar.gz"
+    if needs_resolve then
+        available = self:Available({ args = {} })
+        if #available == 0 then
+            error("无法获取可用版本列表")
+        end
+    end
 
-    -- Example 4: Raw file from repository
-    -- local url = "https://raw.githubusercontent.com/<GITHUB_USER>/<GITHUB_REPO>/" .. version .. "/bin/<TOOL>"
+    if version == "latest" then
+        version = available[1].version
+    elseif version ~= "nightly" and not version:find("%+") and available then
+        local resolved = util.resolve_version(version, available)
+        if resolved then
+            version = resolved
+        else
+            error("找不到匹配的版本: " .. version)
+        end
+    end
 
-    -- Replace with your actual download URL pattern
-    local url = "https://example.com/<TOOL>/releases/download/" .. version .. "/<TOOL>"
+    -- 是否安装开发版本
+    local dev_suffix = ""
+    if os.getenv("MOONBIT_INSTALL_DEV") == "1" then
+        dev_suffix = "-dev"
+    end
 
-    -- Optional: Fetch checksum for verification
-    -- local sha256 = fetch_checksum(version) -- Implement if checksums are available
+    -- 构建下载 URL
+    local encoded_version = util.encode_version(version)
+    local ext = util.get_archive_ext()
+    local filename = "moonbit-" .. platform .. dev_suffix .. ext
+    local url = util.CLI_MOONBIT .. "/binaries/" .. encoded_version .. "/" .. filename
+
+    -- 尝试获取 SHA256 校验和
+    local sha256 = nil
+    local sha256_url = util.CLI_MOONBIT .. "/binaries/" .. encoded_version .. "/moonbit-" .. platform .. dev_suffix .. ".sha256"
+    local resp, err = http.get({ url = sha256_url })
+    if err == nil and resp.status_code == 200 then
+        sha256 = resp.body:match("^(%x+)")
+    end
 
     return {
         version = version,
         url = url,
-        -- sha256 = sha256, -- Optional but recommended for security
-        note = "Downloading <TOOL> " .. version,
-        -- addition = { -- Optional: download additional components
-        --     {
-        --         name = "component",
-        --         url = "https://example.com/component.tar.gz"
-        --     }
-        -- }
+        sha256 = sha256,
+        note = "正在下载 MoonBit " .. version .. " (" .. platform .. ")",
     }
 end
-
--- Helper function for platform detection (uncomment and modify as needed)
---[[
-local function get_platform()
-    -- RUNTIME object is provided by mise/vfox
-    -- RUNTIME.osType: "Windows", "Linux", "Darwin"
-    -- RUNTIME.archType: "amd64", "386", "arm64", etc.
-
-    local os_name = RUNTIME.osType:lower()
-    local arch = RUNTIME.archType
-
-    -- Map to your tool's platform naming convention
-    -- Adjust these mappings based on how your tool names its releases
-    local platform_map = {
-        ["darwin"] = {
-            ["amd64"] = "darwin-amd64",
-            ["arm64"] = "darwin-arm64",
-        },
-        ["linux"] = {
-            ["amd64"] = "linux-amd64",
-            ["arm64"] = "linux-arm64",
-            ["386"] = "linux-386",
-        },
-        ["windows"] = {
-            ["amd64"] = "windows-amd64",
-            ["386"] = "windows-386",
-        }
-    }
-
-    local os_map = platform_map[os_name]
-    if os_map then
-        return os_map[arch] or "linux-amd64"  -- fallback
-    end
-
-    -- Default fallback
-    return "linux-amd64"
-end
---]]

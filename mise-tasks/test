@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-#MISE description="Run plugin tests - install and execute tool"
+#MISE description="运行插件测试 - 安装并执行 moonbit"
 set -euo pipefail
 
-mise plugin link --force <TOOL> .
+mise plugin link --force moonbit .
 mise cache clear
-mise install <TOOL>@1.0.0
+mise install moonbit@latest
 
-# Capture and display the output while also verifying it
-output=$(mise exec "<TOOL>@1.0.0" -- "<TOOL>" --version)
-echo "<TOOL> output: $output"
+# 验证安装
+output=$(mise exec "moonbit@latest" -- moon version)
+echo "moon 输出: $output"
 
-if echo "$output" | grep -q '<TOOL>@1.0.0'; then
-    echo "✓ Tests passed"
+if echo "$output" | grep -q '.'; then
+    echo "✓ 测试通过"
 else
-    echo "✗ Test failed: expected version <TOOL>@1.0.0"
+    echo "✗ 测试失败：无法获取 moon 版本信息"
     exit 1
 fi
