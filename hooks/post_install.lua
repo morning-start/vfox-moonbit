@@ -87,9 +87,17 @@ function PLUGIN:PostInstall(ctx)
     if file.exists(core_dir) then
         log.info("正在编译 MoonBit 核心库...")
 
+        -- moon bundle 需要 MOON_HOME 指向 SDK 根目录才能找到 lib/core/
+        local path_sep = (RUNTIME.osType == "windows") and ";" or ":"
+        local bundle_env = {
+            MOON_HOME = path,
+            PATH = bin_dir .. path_sep .. (os.getenv("PATH") or ""),
+        }
+
         local function bundle(args)
             local ok, result = pcall(cmd.exec, moon_bin .. " bundle --warn-list -a " .. args, {
                 cwd = core_dir,
+                env = bundle_env,
             })
             if not ok then
                 log.warn("moon bundle " .. args .. " 执行失败: " .. tostring(result))
