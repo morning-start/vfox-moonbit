@@ -56,6 +56,22 @@ function PLUGIN:PostInstall(ctx)
         return pcall(cmd.exec, "chmod +x " .. file.join_path(bin_dir, "internal", "tcc"))
     end
 
+    local function extract_core_archive(archive)
+        if RUNTIME.osType == "windows" then
+            local _, err = archiver.decompress(archive, lib_dir)
+            if err ~= nil then
+                return false, "解压核心库失败: " .. tostring(err)
+            end
+            return true
+        end
+
+        local ok, err = pcall(cmd.exec, 'tar xf "' .. archive .. '" --directory="' .. lib_dir .. '"')
+        if not ok then
+            return false, "解压核心库失败: " .. tostring(err)
+        end
+        return true
+    end
+
     local function download_and_extract_core()
         local encoded_version = util.encode_version(version)
         local ext = util.get_archive_ext()
@@ -78,10 +94,10 @@ function PLUGIN:PostInstall(ctx)
             return false, "下载核心库失败: " .. tostring(err)
         end
 
-        _, err = archiver.decompress(archive, lib_dir)
+        ok, err = extract_core_archive(archive)
         pcall(os.remove, archive)
-        if err ~= nil then
-            return false, "解压核心库失败: " .. tostring(err)
+        if not ok then
+            return false, err
         end
 
         return true
