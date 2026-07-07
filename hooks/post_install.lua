@@ -3,9 +3,7 @@
 --- @param ctx table 上下文
 --- @field ctx.rootPath string SDK 安装根目录
 function PLUGIN:PostInstall(ctx)
-    local http = require("http")
     local util = require("util")
-    local archiver = require("archiver")
     local file = require("file")
     local cmd = require("cmd")
     local log = require("log")
@@ -21,42 +19,15 @@ function PLUGIN:PostInstall(ctx)
         pcall(cmd.exec, "chmod +x " .. path .. "/bin/internal/tcc")
     end
 
-    -- 下载并编译核心库
-    local encoded_version = util.encode_version(version)
-    local ext = util.get_archive_ext()
-    local core_filename = "core-" .. encoded_version .. ext
-    local core_url = util.CLI_MOONBIT .. "/cores/" .. core_filename
-    local core_archive = path .. "/core_archive" .. ext
-
-    log.info("正在下载 MoonBit 核心库...")
-    local resp, err = http.get({ url = core_url })
-    if err ~= nil or resp.status_code ~= 200 then
-        log.warn("核心库下载失败 (" .. tostring(err or resp.status_code) .. ")，跳过 bundle 步骤。")
-        log.warn("URL: " .. core_url)
+    -- vfox 已自动下载并解压附加的核心库
+    local core_sdk = ctx.sdkInfo["core"]
+    if core_sdk == nil then
+        log.warn("核心库未找到，跳过 bundle 步骤。")
         return
     end
-
-    -- 写入临时文件
-    local f = io.open(core_archive, "wb")
-    if f == nil then
-        log.warn("无法创建核心库临时文件，跳过 bundle 步骤。")
-        return
-    end
-    f:write(resp.body)
-    f:close()
-
-    -- 解压核心库到 lib 目录
-    local lib_dir = path .. "/lib"
-    log.info("正在解压核心库...")
-    archiver.decompress(core_archive, lib_dir)
-
-    -- 删除临时文件
-    os.remove(core_archive)
-
-    -- 执行 moon bundle 编译核心库
-    local core_dir = lib_dir .. "/core"
+    local core_dir = core_sdk.path
     if not file.exists(core_dir) then
-        log.warn("核心库解压后未找到 core 目录，跳过 bundle 步骤。")
+        log.warn("核心库解压后未找到目录，跳过 bundle 步骤。")
         return
     end
 

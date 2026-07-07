@@ -50,9 +50,18 @@ function PLUGIN:PreInstall(ctx)
     local filename = "moonbit-" .. platform .. dev_suffix .. ext
     local url = util.CLI_MOONBIT .. "/binaries/" .. encoded_version .. "/" .. filename
 
+    -- 核心库作为附加文件，由 vfox 自动下载并解压
+    local core_url = util.CLI_MOONBIT .. "/cores/core-" .. encoded_version .. ext
+
     return {
         version = version,
         url = url,
         note = "正在下载 MoonBit " .. version .. " (" .. platform .. ")",
+        addition = {
+            {
+                name = "core",
+                url = core_url,
+            },
+        },
     }
 end
