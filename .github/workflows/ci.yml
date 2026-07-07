@@ -3,14 +3,13 @@ name: CI
 on:
     push:
         branches: [main]
-        tags: ["v*", "manifest"]
+        tags: ["v*"]
     pull_request:
         branches: [main]
     workflow_dispatch:
 
 jobs:
     lint:
-        if: github.ref != 'refs/tags/manifest'
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -20,7 +19,6 @@ jobs:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     test:
-        if: github.ref != 'refs/tags/manifest'
         strategy:
             matrix:
                 os: [ubuntu-latest, macos-latest, windows-latest]
@@ -39,41 +37,13 @@ jobs:
         steps:
             - uses: actions/checkout@v4
 
-            - name: Package plugin
+            - name: Extract version from tag
               run: |
                   VERSION="${GITHUB_REF_NAME#v}"
-                  git archive --format=zip --output="moonbit-${VERSION}.zip" "${{ github.ref_name }}"
+                  echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-            - name: Create Release
-              uses: softprops/action-gh-release@v3
+            - name: Publish plugin and manifest
+              uses: version-fox/plugin-manifest-action@main
               with:
-                  name: ${{ github.ref_name }}
-                  draft: false
-                  prerelease: false
-                  generate_release_notes: true
-                  files: |
-                      moonbit-*.zip
-
-    release-manifest:
-        if: github.ref == 'refs/tags/manifest'
-        runs-on: ubuntu-latest
-        permissions:
-            contents: write
-        steps:
-            - uses: actions/checkout@v4
-              with:
-                  fetch-depth: 0
-
-            - name: Verify manifest.json exists
-              run: test -f manifest.json
-
-            - name: Create Release
-              uses: softprops/action-gh-release@v3
-              with:
-                  name: manifest
-                  tag_name: manifest
-                  draft: false
-                  prerelease: false
-                  generate_release_notes: false
-                  files: |
-                      manifest.json
+                  version: ${{ env.VERSION }}
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
