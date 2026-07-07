@@ -29,12 +29,21 @@ function PLUGIN:PostInstall(ctx)
     local core_archive = path .. "/core_archive" .. ext
 
     log.info("正在下载 MoonBit 核心库...")
-    local dl_err = http.download_file({ url = core_url }, core_archive)
-    if dl_err ~= nil then
-        log.warn("核心库下载失败 (" .. tostring(dl_err) .. ")，跳过 bundle 步骤。")
+    local resp, err = http.get({ url = core_url })
+    if err ~= nil or resp.status_code ~= 200 then
+        log.warn("核心库下载失败 (" .. tostring(err or resp.status_code) .. ")，跳过 bundle 步骤。")
         log.warn("URL: " .. core_url)
         return
     end
+
+    -- 写入临时文件
+    local f = io.open(core_archive, "wb")
+    if f == nil then
+        log.warn("无法创建核心库临时文件，跳过 bundle 步骤。")
+        return
+    end
+    f:write(resp.body)
+    f:close()
 
     -- 解压核心库到 lib 目录
     local lib_dir = path .. "/lib"
